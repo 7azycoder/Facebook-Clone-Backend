@@ -23,8 +23,8 @@ class MessageJob extends Job
 
     public function handle()
     {
-        // $newMessage = $this->message;
+        $newMessage = $this->message;
         echo 'handle called';
-        // $newMessage->save();
+        $newMessage->save();
     }
 }

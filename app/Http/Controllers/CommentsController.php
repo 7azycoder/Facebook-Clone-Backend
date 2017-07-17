@@ -18,7 +18,6 @@ class CommentsController extends Controller
         
     }
 
-
     public function createComment(Request $request)
     {
         $this->validate($request, [
@@ -52,11 +51,8 @@ class CommentsController extends Controller
     public function updateComment(Request $request, $id)
     {
         $user = Auth::user();
-
         $content = $request->input('content');
-
         $comment = Comment::where('id', $id)->firstOrFail();
-
         $comment->content = $content;
         $comment->save();
 
@@ -67,7 +63,6 @@ class CommentsController extends Controller
     public function deleteComment(Request $request, $id)
     {
         $user = Auth::user();
-
         $comment = Comment::where('id', $id)->firstOrFail();
         $comment->delete();
 
@@ -78,7 +73,6 @@ class CommentsController extends Controller
     public function getCommentById(Request $request, $id)
     {
         $user = Auth::user();
-
         $comment = Comment::where('id', $id)->firstOrFail();
 
         return response()->json(['comment' => $comment]);

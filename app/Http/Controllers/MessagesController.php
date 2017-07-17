@@ -25,12 +25,16 @@ class MessagesController extends Controller
         $message->from_user_id = $user->id;
         $message->to_user_id = $request->input('to_user_id');
         $message->content = $request->input('content');
+        $message->save();
+        return response()
+                  ->json(['success' => 'Message Sent'],200);
         
-        $this->dispatch(new MessageJob($message));
+        // $messageJob = new MessageJob($message);
+        // dispatch($messageJob);
         // $this->dispatch(new MessageJob($request->all()));
     }
 
-    public function getMessages(Request $request)
+    public function getMessages(Request $request, $to_user_id)
     {
         // $this->validate($request, [
         // 'to_user_id' => 'required',
@@ -38,8 +42,7 @@ class MessagesController extends Controller
         // ]);
 
         $user = Auth::User();
-        $from_user_id = $user->id;
-        $to_user_id = $request->header('to_user_id');  
+        $from_user_id = $user->id; 
 
         $messages1 = Message::where([
         ['from_user_id', '=', $from_user_id],
@@ -54,8 +57,8 @@ class MessagesController extends Controller
         ->orderBy('created_at','asc')
         ->get();
 
-        
-        return response()->json(['messages' => $messages2]);
+        return response()
+                  ->json(['messages' => $messages2],200);
 
     }
 

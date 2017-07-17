@@ -29,21 +29,25 @@ $app->group(['middleware' => ['cors','auth']], function () use ($app) {
 
 	$app->get('/user/', 'UsersController@getCurrentUser');
 
-	$app->get('/user/{user_id}', 'UsersController@getUserById');
+	$app->get('/user/{user_id}', 'UsersController@getOtherUserById');
 
 	$app->delete('/user/', 'UsersController@deleteCurrentUser');
 
 	$app->get('/search/{name}', 'UsersController@searchUserByName');
 
-	$app->post('/request/{to_user_id}', 'RequestsController@sendRequest');
+	$app->get('/request', 'RequestsController@getRequests');
 
-	$app->delete('/request/{from_user_id}', 'RequestsController@cancelRequest');
+	$app->post('/request', 'RequestsController@sendRequest');
 
-	$app->patch('/request/{from_user_id}', 'RequestsController@acceptRequest');
+	$app->post('/request/delete/{id}', 'RequestsController@deleteRequest');
+
+	$app->post('/request/{id}', 'RequestsController@confirmRequest');
+
+	// $app->put('/request/{id}', 'RequestsController@declineRequest');
 
 	$app->post('/message', 'MessagesController@sendMessage');
 
-	$app->get('/message', 'MessagesController@getMessages');
+	$app->get('/message/{to_user_id}', 'MessagesController@getMessages');
 
 	$app->post('/post', 'PostsController@createPost');
 

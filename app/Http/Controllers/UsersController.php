@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\User;
 use App\Post;
 use App\Comment;
+use App\FriendRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -152,15 +153,175 @@ class UsersController extends Controller
 
     public function getUserById(Request $request, $user_id)
     {
-        $user = Auth::user();
-        $user = User::where('id', $user_id)->first();
+        $currentUser = Auth::user();
+        $postIds = [];
+        $allUser = [];
+        $allPosts = [];
+        $user = User::where('id',$user_id)->first();
         if($user){
-            return response()->json(['user' => $user],200);
-        }
+            // same user is logged in 
+            // send user complete info
+            $posts = Post::where('user_id', $user->id)->orderBy('updated_at', 'DESC')->get();
+            if($posts){
+                // get all posts ids of user
+                foreach ($posts as $post) {
+                    $postIds[] = $post->id;
+                }
 
-        return response()->json(['error' => "User Not Found"],400);
+                // get all comments on all post ids
+                $comments = Comment::whereIn('post_id', $postIds)->orderBy('updated_at', 'ASC')->get();
+                if(!empty($comments)) {
+                    foreach ($comments as $comment) {
+                        $allUser[] = $comment->user_id;
+                    }
+                    $allUser = array_unique($allUser);
+                    $userNames = User::select(['id','name'])->whereIn('id', $allUser)->get();
+                    $temp = [];
+                    foreach ($userNames as $row) {
+                        $temp[$row['id']] = $row['name'];
+                    }
+                    // a map for id => username
+                    $userNames = $temp;
+
+
+                    foreach ($comments as $comment) {
+                        $comment_id = $comment['id'];
+                        $post_id = $comment['post_id'];
+                        $user_id = $comment['user_id'];
+                        $commentText = $comment['content'];
+                    }
+                }
+
+                
+                foreach ($posts as $post) {
+                    $commentsForPost = [];
+                    foreach ($comments as $comment) {
+                        if($post->id === $comment->post_id){
+                            $commentsForPost[] = [
+                                'id' => $comment->id,
+                                'name' => $userNames[$comment->user_id],
+                                'updated_at'=> $comment->updated_at,
+                                'content' => $comment->content
+                            ];
+                        }
+                    }
+
+                    $allPosts[] = [
+                        'id'  => $post->id,
+                        'updated_at' => $post->updated_at,
+                        'content' => $post->content,
+                        'comments' => $commentsForPost
+                    ];
+                }
+            }
+
+            return response()->json(['user' => ['id' => $user->id, 'name' => $user->name, 'posts' => $allPosts]],200);
+        }
+        return response()->json(['error' => 'User Not Found'],400);
 
     }
+
+    public function getOtherUserById(Request $request, $user_id)
+    {
+        $currentUser = Auth::user();
+        $postIds = [];
+        $allUser = [];
+        $allPosts = [];
+        $user = User::where('id',$user_id)->first();
+        if($user){
+            // same user is logged in 
+            // send user complete info
+            $posts = Post::where('user_id', $user->id)->orderBy('updated_at', 'DESC')->get();
+            if($posts){
+                // get all posts ids of user
+                foreach ($posts as $post) {
+                    $postIds[] = $post->id;
+                }
+
+                // get all comments on all post ids
+                $comments = Comment::whereIn('post_id', $postIds)->orderBy('updated_at', 'ASC')->get();
+                if(!empty($comments)) {
+                    foreach ($comments as $comment) {
+                        $allUser[] = $comment->user_id;
+                    }
+                    $allUser = array_unique($allUser);
+                    $userNames = User::select(['id','name'])->whereIn('id', $allUser)->get();
+                    $temp = [];
+                    foreach ($userNames as $row) {
+                        $temp[$row['id']] = $row['name'];
+                    }
+                    // a map for id => username
+                    $userNames = $temp;
+
+
+                    foreach ($comments as $comment) {
+                        $comment_id = $comment['id'];
+                        $post_id = $comment['post_id'];
+                        $user_id = $comment['user_id'];
+                        $commentText = $comment['content'];
+                    }
+                }
+
+                
+                foreach ($posts as $post) {
+                    $commentsForPost = [];
+                    foreach ($comments as $comment) {
+                        if($post->id === $comment->post_id){
+                            $commentsForPost[] = [
+                                'id' => $comment->id,
+                                'name' => $userNames[$comment->user_id],
+                                'updated_at'=> $comment->updated_at,
+                                'content' => $comment->content
+                            ];
+                        }
+                    }
+
+                    $allPosts[] = [
+                        'id'  => $post->id,
+                        'updated_at' => $post->updated_at,
+                        'content' => $post->content,
+                        'comments' => $commentsForPost
+                    ];
+                }
+            }
+
+            $isFriends = false;
+            $status = $this->friendShipStatus($user->id, $currentUser->id);
+            if($status === "accepted"){
+                $isFriends = true;
+            }
+
+            return response()->json(['user' => ['id' => $user->id, 'name' => $user->name, 'posts' => $allPosts ,'isFriends' => $isFriends , 'status' => $status]],200);
+        }
+
+        return response()->json(['error' => 'User Not Found'],400);
+
+    }
+
+    public function friendShipStatus($user_id_1 , $user_id_2)
+    {
+        $friendRequest1 = FriendRequest::where([
+        ['from_user_id', '=', $user_id_1],
+        ['to_user_id', '=', $user_id_2]
+        ])->first();
+
+        if($friendRequest1){
+            return $friendRequest1->status;
+        }
+
+        $friendRequest2 = FriendRequest::where([
+        ['from_user_id', '=', $user_id_2],
+        ['to_user_id', '=', $user_id_1],
+        ])->first();
+
+        if($friendRequest2){
+            return $friendRequest2->status;
+        }
+
+        return "NoRequestSent";
+    }
+
+
 
     public function deleteCurrentUser(Request $request)
     {
@@ -174,8 +335,17 @@ class UsersController extends Controller
     {
         $name = rawurldecode($name);
         $users = User::where('name','like', '%' . $name . '%')->get();
+
+        $allUsers = [];
+        foreach ($users as $user) {
+            $allUsers[] = [
+                'id' => $user->id,
+                'name' => $user->name,
+            ];
+        }
+        // print_r($allUsers);
         return response()
-                  ->json(['users' => $users],200);
+                  ->json(['users' => $allUsers],200);
 
     }
 }
