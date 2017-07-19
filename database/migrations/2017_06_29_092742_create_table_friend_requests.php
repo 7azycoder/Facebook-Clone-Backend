@@ -20,8 +20,9 @@ class CreateTableFriendRequests extends Migration
             $table->string('status')->default('pending');
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(DB::raw('CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP'));
-            $table->foreign('from_user_id')->references('id')->on('users');
-            $table->foreign('to_user_id')->references('id')->on('users');
+            $table->foreign('from_user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('to_user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->index(['from_user_id','to_user_id']);
         });
     }
 

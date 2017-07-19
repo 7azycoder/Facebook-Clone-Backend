@@ -45,37 +45,48 @@ class CommentsController extends Controller
         $post_id = $request->header('post_id');
         $comments = Comment::where([['user_id','=',$user->id], ['post_id','=', $post_id]])->get();
 
-        return response()->json(['comments' => $comments]);
+        return response()
+                ->json(['comments' => $comments],200);
     }
 
     public function updateComment(Request $request, $id)
     {
         $user = Auth::user();
         $content = $request->input('content');
-        $comment = Comment::where('id', $id)->firstOrFail();
-        $comment->content = $content;
-        $comment->save();
+        $comment = Comment::where('id', $id)->first();
+        if($comment){
+            $comment->content = $content;
+            $comment->save();
+            return response()
+                ->json(['success' => 'Comment Updated Successfully'],200);
+        }
 
-        return response('Comment Updated Successfully', 200)
-                  ->header('Content-Type', 'text/plain');
+        return response()
+            ->json(['error' => 'Comment not found'],400);
+    
     }
 
     public function deleteComment(Request $request, $id)
     {
         $user = Auth::user();
-        $comment = Comment::where('id', $id)->firstOrFail();
-        $comment->delete();
+        $comment = Comment::where('id', $id)->first();
+        if($comment){
+            $comment->delete();
+            return response()->json(['success' => 'Commend deleted successfully'],200);
+        }
 
-        return response('Comment Deleted Successfully', 200)
-                  ->header('Content-Type', 'text/plain');
+        return response()->json(['error' => 'Commend not found'],400);
     }
 
-    public function getCommentById(Request $request, $id)
-    {
-        $user = Auth::user();
-        $comment = Comment::where('id', $id)->firstOrFail();
+    // public function getCommentById(Request $request, $id)
+    // {
+    //     $user = Auth::user();
+    //     $comment = Comment::where('id', $id)->first();
+    //     if($comment){
+    //         return response()->json(['comment' => $comment],200);
+    //     }
 
-        return response()->json(['comment' => $comment]);
-    }
+    //     return response()->json(['error' => 'Commend not found'],400);
+    // }
 
 }

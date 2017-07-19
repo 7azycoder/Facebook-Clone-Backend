@@ -9,6 +9,7 @@ use App\FriendRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class UsersController extends Controller
 {
@@ -100,7 +101,7 @@ class UsersController extends Controller
                 }
 
                 // get all comments on all post ids
-                $comments = Comment::whereIn('post_id', $postIds)->orderBy('updated_at', 'ASC')->get();
+                $comments = Comment::whereIn('post_id', $postIds)->orderBy('created_at', 'ASC')->get();
                 if(!empty($comments)) {
                     foreach ($comments as $comment) {
                         $allUser[] = $comment->user_id;
@@ -130,16 +131,20 @@ class UsersController extends Controller
                         if($post->id === $comment->post_id){
                             $commentsForPost[] = [
                                 'id' => $comment->id,
+                                'user_id' => $comment->user_id,
                                 'name' => $userNames[$comment->user_id],
-                                'updated_at'=> $comment->updated_at,
-                                'content' => $comment->content
+                                'updated_at'=> $this->formattedDate($comment->updated_at),
+                                'content' => $comment->content,
+                                'isEditable' => $comment->user_id == $currentUser->id ? true:false
                             ];
                         }
                     }
 
+
+
                     $allPosts[] = [
                         'id'  => $post->id,
-                        'updated_at' => $post->updated_at,
+                        'updated_at' => $this->formattedDate($post->updated_at) ,
                         'content' => $post->content,
                         'comments' => $commentsForPost
                     ];
@@ -151,75 +156,75 @@ class UsersController extends Controller
         return response()->json(['error' => 'User Not Found'],400);
     }
 
-    public function getUserById(Request $request, $user_id)
-    {
-        $currentUser = Auth::user();
-        $postIds = [];
-        $allUser = [];
-        $allPosts = [];
-        $user = User::where('id',$user_id)->first();
-        if($user){
-            // same user is logged in 
-            // send user complete info
-            $posts = Post::where('user_id', $user->id)->orderBy('updated_at', 'DESC')->get();
-            if($posts){
-                // get all posts ids of user
-                foreach ($posts as $post) {
-                    $postIds[] = $post->id;
-                }
+    // public function getUserById(Request $request, $user_id)
+    // {
+    //     $currentUser = Auth::user();
+    //     $postIds = [];
+    //     $allUser = [];
+    //     $allPosts = [];
+    //     $user = User::where('id',$user_id)->first();
+    //     if($user){
+    //         // same user is logged in 
+    //         // send user complete info
+    //         $posts = Post::where('user_id', $user->id)->orderBy('updated_at', 'DESC')->get();
+    //         if($posts){
+    //             // get all posts ids of user
+    //             foreach ($posts as $post) {
+    //                 $postIds[] = $post->id;
+    //             }
 
-                // get all comments on all post ids
-                $comments = Comment::whereIn('post_id', $postIds)->orderBy('updated_at', 'ASC')->get();
-                if(!empty($comments)) {
-                    foreach ($comments as $comment) {
-                        $allUser[] = $comment->user_id;
-                    }
-                    $allUser = array_unique($allUser);
-                    $userNames = User::select(['id','name'])->whereIn('id', $allUser)->get();
-                    $temp = [];
-                    foreach ($userNames as $row) {
-                        $temp[$row['id']] = $row['name'];
-                    }
-                    // a map for id => username
-                    $userNames = $temp;
+    //             // get all comments on all post ids
+    //             $comments = Comment::whereIn('post_id', $postIds)->orderBy('updated_at', 'ASC')->get();
+    //             if(!empty($comments)) {
+    //                 foreach ($comments as $comment) {
+    //                     $allUser[] = $comment->user_id;
+    //                 }
+    //                 $allUser = array_unique($allUser);
+    //                 $userNames = User::select(['id','name'])->whereIn('id', $allUser)->get();
+    //                 $temp = [];
+    //                 foreach ($userNames as $row) {
+    //                     $temp[$row['id']] = $row['name'];
+    //                 }
+    //                 // a map for id => username
+    //                 $userNames = $temp;
 
 
-                    foreach ($comments as $comment) {
-                        $comment_id = $comment['id'];
-                        $post_id = $comment['post_id'];
-                        $user_id = $comment['user_id'];
-                        $commentText = $comment['content'];
-                    }
-                }
+    //                 foreach ($comments as $comment) {
+    //                     $comment_id = $comment['id'];
+    //                     $post_id = $comment['post_id'];
+    //                     $user_id = $comment['user_id'];
+    //                     $commentText = $comment['content'];
+    //                 }
+    //             }
 
                 
-                foreach ($posts as $post) {
-                    $commentsForPost = [];
-                    foreach ($comments as $comment) {
-                        if($post->id === $comment->post_id){
-                            $commentsForPost[] = [
-                                'id' => $comment->id,
-                                'name' => $userNames[$comment->user_id],
-                                'updated_at'=> $comment->updated_at,
-                                'content' => $comment->content
-                            ];
-                        }
-                    }
+    //             foreach ($posts as $post) {
+    //                 $commentsForPost = [];
+    //                 foreach ($comments as $comment) {
+    //                     if($post->id === $comment->post_id){
+    //                         $commentsForPost[] = [
+    //                             'id' => $comment->id,
+    //                             'name' => $userNames[$comment->user_id],
+    //                             'updated_at'=> $comment->updated_at,
+    //                             'content' => $comment->content
+    //                         ];
+    //                     }
+    //                 }
 
-                    $allPosts[] = [
-                        'id'  => $post->id,
-                        'updated_at' => $post->updated_at,
-                        'content' => $post->content,
-                        'comments' => $commentsForPost
-                    ];
-                }
-            }
+    //                 $allPosts[] = [
+    //                     'id'  => $post->id,
+    //                     'updated_at' => $post->updated_at,
+    //                     'content' => $post->content,
+    //                     'comments' => $commentsForPost
+    //                 ];
+    //             }
+    //         }
 
-            return response()->json(['user' => ['id' => $user->id, 'name' => $user->name, 'posts' => $allPosts]],200);
-        }
-        return response()->json(['error' => 'User Not Found'],400);
+    //         return response()->json(['user' => ['id' => $user->id, 'name' => $user->name, 'posts' => $allPosts]],200);
+    //     }
+    //     return response()->json(['error' => 'User Not Found'],400);
 
-    }
+    // }
 
     public function getOtherUserById(Request $request, $user_id)
     {
@@ -239,7 +244,7 @@ class UsersController extends Controller
                 }
 
                 // get all comments on all post ids
-                $comments = Comment::whereIn('post_id', $postIds)->orderBy('updated_at', 'ASC')->get();
+                $comments = Comment::whereIn('post_id', $postIds)->orderBy('created_at', 'ASC')->get();
                 if(!empty($comments)) {
                     foreach ($comments as $comment) {
                         $allUser[] = $comment->user_id;
@@ -269,16 +274,18 @@ class UsersController extends Controller
                         if($post->id === $comment->post_id){
                             $commentsForPost[] = [
                                 'id' => $comment->id,
+                                'user_id' => $comment->user_id,
                                 'name' => $userNames[$comment->user_id],
-                                'updated_at'=> $comment->updated_at,
-                                'content' => $comment->content
+                                'updated_at'=> $this->formattedDate($comment->updated_at),
+                                'content' => $comment->content,
+                                'isEditable' => $comment->user_id == $currentUser->id ? true:false
                             ];
                         }
                     }
 
                     $allPosts[] = [
                         'id'  => $post->id,
-                        'updated_at' => $post->updated_at,
+                        'updated_at' => $this->formattedDate($post->updated_at),
                         'content' => $post->content,
                         'comments' => $commentsForPost
                     ];
@@ -343,9 +350,16 @@ class UsersController extends Controller
                 'name' => $user->name,
             ];
         }
-        // print_r($allUsers);
+
         return response()
                   ->json(['users' => $allUsers],200);
 
+    }
+
+    public function formattedDate($dateString){
+        $carbon = new Carbon($dateString);
+        // $time = microtime(true)
+        $localUpdatedDate = $carbon;//->timezone('Asia/Kolkata');
+        return $localUpdatedDate->diffForHumans();
     }
 }

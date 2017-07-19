@@ -41,6 +41,8 @@ $app->group(['middleware' => ['cors','auth']], function () use ($app) {
 
 	$app->post('/request/delete/{id}', 'RequestsController@deleteRequest');
 
+	$app->post('/request/cancel/{to_user_id}', 'RequestsController@deleteRequestByUserId');
+
 	$app->post('/request/{id}', 'RequestsController@confirmRequest');
 
 	// $app->put('/request/{id}', 'RequestsController@declineRequest');
@@ -53,19 +55,19 @@ $app->group(['middleware' => ['cors','auth']], function () use ($app) {
 
 	$app->get('/post', 'PostsController@getPosts');
 
-	$app->patch('/post/{id}', 'PostsController@updatePost');
+	$app->post('/post/update/{id}', 'PostsController@updatePost');
 
-	$app->delete('/post/{id}', 'PostsController@deletePost');
+	$app->post('/post/delete/{id}', 'PostsController@deletePost');
 
 	$app->get('/post/{id}', 'PostsController@getPostById');
 
-	$app->post('/comment', 'CommentsController@createComment');
-
 	$app->get('/comment', 'CommentsController@getComments');
 
-	$app->patch('/comment/{id}', 'CommentsController@updateComment');
+	$app->post('/comment', 'CommentsController@createComment');
 
-	$app->delete('/comment/{id}', 'CommentsController@deleteComment');
+	$app->post('/comment/update/{id}', 'CommentsController@updateComment');
 
-	$app->get('/comment/{id}', 'CommentsController@getCommentById');
+	$app->post('/comment/delete/{id}', 'CommentsController@deleteComment');
+
+	// $app->get('/comment/{id}', 'CommentsController@getCommentById');
 });

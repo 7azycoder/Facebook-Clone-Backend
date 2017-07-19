@@ -17,10 +17,11 @@ class CreateTableMessages extends Migration
             $table->increments('id');
             $table->integer('from_user_id')->unsigned();
             $table->integer('to_user_id')->unsigned();
-            $table->string('content');
+            $table->string('content',1000);
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
-            $table->foreign('from_user_id')->references('id')->on('users');
-            $table->foreign('to_user_id')->references('id')->on('users');
+            $table->foreign('from_user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('to_user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->index(['from_user_id','to_user_id']);
         });
     }
 

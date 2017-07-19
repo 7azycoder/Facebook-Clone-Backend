@@ -103,6 +103,21 @@ class RequestsController extends Controller
               ->json(['error' => 'No Friend Request Found'],400);
     }
 
+    public function deleteRequestByUserId(Request $request, $to_user_id)
+    {
+        $user = Auth::user();
+        $friendRequest = FriendRequest::where([['from_user_id','=',$user->id],['to_user_id', '=', $to_user_id]])->first();
+
+        if($friendRequest){
+            $friendRequest->delete();
+            return response()
+              ->json(['success' => 'Friend Request Deleted'],200);
+        }
+
+        return response()
+              ->json(['error' => 'No Friend Request Found'],400);
+    }
+
     public function confirmRequest(Request $request, $id)
     {
         $user = Auth::user();
