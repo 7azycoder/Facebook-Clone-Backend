@@ -82,7 +82,7 @@ class PostsController extends Controller
             ->json(['success' => 'Post deleted successfully'],200);
         } else {
           // user is not the author of post
-          // user cannot delete this post
+          // user cannot delete this post 
           return response()
             ->json(['error' => 'You are not authorised to delete this post'],400);
         }

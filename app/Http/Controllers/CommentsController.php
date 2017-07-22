@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use App\Post;
 use App\Comment;
+use App\FriendRequest;
 
 class CommentsController extends Controller
 {
@@ -27,9 +28,10 @@ class CommentsController extends Controller
       $user = Auth::user();
       $content = $request->input('content'); 
 
-      $post = Post::where('id',$post_id)->get();
-      if($post){
-        if($post->user_id == $user->id)
+      $post = Post::where('id',$post_id)->first();
+      if($post)
+      {
+        if($user->id == $post->user_id)
         {
           // user is the author of post
           // save comment
@@ -81,7 +83,7 @@ class CommentsController extends Controller
     {
       $user = Auth::user();
 
-      $post = Post::where('id',$post_id)->get();
+      $post = Post::where('id',$post_id)->first();
       if($post)
       {
         if($post->user_id == $user->id)
@@ -137,7 +139,7 @@ class CommentsController extends Controller
           // user is the author of comment
           // user has permission tot update it
           $comment->content = $content;
-          $comment->save()
+          $comment->save();
           return response()
             ->json(['success' => 'Comment updated successfully'],200);
         } else {
@@ -165,7 +167,7 @@ class CommentsController extends Controller
         {
           // user is the author of comment
           // user has permission to delete comment
-          $comment->delete()
+          $comment->delete();
           return response()
             ->json(['success' => 'Comment deleted successfully'],200);
         } else {

@@ -85,22 +85,7 @@ class RequestsController extends Controller
         
     }
 
-    // public function deleteRequestById(Request $request, $id)
-    // {
-    //     $user = Auth::user();
-    //     $friendRequest = FriendRequest::where('id','=',$id)->first();
-
-    //     if($friendRequest){
-    //         $friendRequest->delete();
-    //         return response()
-    //           ->json(['success' => 'Friend Request Deleted'],200);
-    //     }
-
-    //     return response()
-    //           ->json(['error' => 'No Friend Request Found'],400);
-    // }
-
-    public function cancelSentRequestByUserId(Request $request, $to_user_id)
+    public function cancelSentRequest(Request $request, $to_user_id)
     {
       $user = Auth::user();
       $friendRequest = FriendRequest::where([
@@ -119,7 +104,7 @@ class RequestsController extends Controller
         ->json(['error' => 'No Friend Request Found'],400);
     }
 
-    public function rejectReceivedRequestByUserId(Request $request, $from_user_id)
+    public function rejectReceivedRequest(Request $request, $from_user_id)
     {
       $user = Auth::user();
       $friendRequest = FriendRequest::where([
@@ -138,23 +123,39 @@ class RequestsController extends Controller
         ->json(['error' => 'No Friend Request Found'],400);
     }
 
-    // public function confirmRequestById(Request $request, $id)
-    // {
-    //   $user = Auth::user();
-    //   $friendRequest = FriendRequest::where([['id','=',$id],['status','=','pending']])->first();
+    public function unFriend(Request $request, $user_id)
+    {
+      $user = Auth::user();
+      $friendRequest1 = FriendRequest::where([
+        ['from_user_id','=',$user_id],
+        ['to_user_id', '=', $user->id],
+        ['status','=','accepted']
+        ])->first();
 
-    //   if($friendRequest){
-    //     $friendRequest->status = 'accepted';
-    //     $friendRequest->save();
-    //     return response()
-    //       ->json(['success' => 'Friend Added'],200);
-    //   }
+      if($friendRequest1){
+        $friendRequest1->delete();
+        return response()
+          ->json(['success' => 'Friend Deleted'],200);
+      }
 
-    //   return response()
-    //         ->json(['error' => 'No Friend Request Found'],400);
-    // }
+      $friendRequest2 = FriendRequest::where([
+        ['from_user_id','=',$user->id],
+        ['to_user_id', '=', $user_id],
+        ['status','=','accepted']
+        ])->first();
 
-    public function confirmReceivedRequestByUserId(Request $request, $from_user_id)
+      if($friendRequest2){
+        $friendRequest2->delete();
+        return response()
+          ->json(['success' => 'Friend Deleted'],200);
+      }
+
+      return response()
+        ->json(['error' => 'No Friend Found'],400);
+    }
+
+
+    public function confirmReceivedRequest(Request $request, $from_user_id)
     {
       $user = Auth::user();
       $friendRequest = FriendRequest::where([
