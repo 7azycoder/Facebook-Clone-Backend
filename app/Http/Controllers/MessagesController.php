@@ -21,17 +21,12 @@ class MessagesController extends Controller
     public function sendMessage(Request $request)
     {
         $user = Auth::user();
-        $message = new Message;
-        $message->from_user_id = $user->id;
-        $message->to_user_id = $request->input('to_user_id');
-        $message->content = $request->input('content');
-        $message->save();
+        $from_user_id = $user->id;
+        $to_user_id = $request->input('to_user_id');
+        $content = $request->input('content');
+        $this->dispatch(new MessageJob($from_user_id,$to_user_id,$content));
         return response()
                   ->json(['success' => 'Message Sent'],200);
-        
-        // $messageJob = new MessageJob($message);
-        // dispatch($messageJob);
-        // $this->dispatch(new MessageJob($request->all()));
     }
 
     public function getMessages(Request $request, $to_user_id)
