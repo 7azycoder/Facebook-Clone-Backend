@@ -25,7 +25,7 @@ $app->group(['middleware' => ['cors']], function () use ($app) {
 
 $app->group(['middleware' => ['cors','auth']], function () use ($app) {
 
-  $app->post('/logout', 'UsersController@logout');
+    $app->post('/logout', 'UsersController@logout');
 
 	$app->get('/user/', 'UsersController@getCurrentUser');
 
@@ -44,8 +44,6 @@ $app->group(['middleware' => ['cors','auth']], function () use ($app) {
 	$app->post('/request/cancel/{to_user_id}', 'RequestsController@deleteRequestByUserId');
 
 	$app->post('/request/{id}', 'RequestsController@confirmRequest');
-
-	// $app->put('/request/{id}', 'RequestsController@declineRequest');
 
 	$app->post('/message', 'MessagesController@sendMessage');
 
@@ -69,5 +67,4 @@ $app->group(['middleware' => ['cors','auth']], function () use ($app) {
 
 	$app->post('/comment/delete/{id}', 'CommentsController@deleteComment');
 
-	// $app->get('/comment/{id}', 'CommentsController@getCommentById');
 });
