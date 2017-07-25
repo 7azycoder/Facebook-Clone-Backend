@@ -31,13 +31,11 @@ class UsersController extends Controller
         'password' => 'required|min:6|max:255',
         ]);
 
-        $name = $request->input('name');
-        $email = $request->input('email');
         $password = $request->input('password');
 
         $user = new User;
-        $user->name = $request->name;
-        $user->email = $request->email;
+        $user->name = $request->input('name');
+        $user->email = $request->input('email');
         $user->password = Hash::make($password);
         $user->save();
 
@@ -49,6 +47,7 @@ class UsersController extends Controller
     {
         $this->validate($request, [
         'email' => 'required|email',
+        'password' => 'required'
         ]);
 
         $email = $request->input('email');
@@ -71,7 +70,7 @@ class UsersController extends Controller
         }
 
         return response()
-              ->json(['error' => 'Email not found'],400);
+              ->json(['error' => 'No user found with that email'],400);
     }
 
 

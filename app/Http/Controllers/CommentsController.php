@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use App\Post;
 use App\Comment;
+use App\FriendRequest;
 
 class CommentsController extends Controller
 {
@@ -18,75 +19,193 @@ class CommentsController extends Controller
         
     }
 
-    public function createComment(Request $request)
+    public function createComment(Request $request, $post_id)
     {
-        $this->validate($request, [
-        'content' => 'required',
-        'post_id' => 'required',
-        ]);
+      $this->validate($request, [
+      'content' => 'required'
+      ]);
 
-        $content = $request->input('content');  
-        $post_id = $request->input('post_id');
-        $user = Auth::user();
-        $comment = new Comment;
-        $comment->post_id = $post_id;
-        $comment->user_id = $user->id;
-        $comment->content = $content;
-        $comment->save();
+      $user = Auth::user();
+      $content = $request->input('content'); 
 
+      $post = Post::where('id',$post_id)->first();
+      if($post)
+      {
+        if($user->id == $post->user_id)
+        {
+          // user is the author of post
+          // save comment
+          $comment = new Comment;
+          $comment->post_id = $post_id;
+          $comment->user_id = $user->id;
+          $comment->content = $content;
+          $comment->save();
+
+          return response()
+            ->json(['success' => 'Comment Added Successfully'],200);
+        } 
+        else
+        {
+          // user is not the author of post
+          // check if user is friend of author
+          $friendCheck = $this->isFriends($user->id, $post->user_id);
+
+          if($friendCheck)
+          {
+            // user is friend of author
+            // user can comment on post
+            $comment = new Comment;
+            $comment->post_id = $post_id;
+            $comment->user_id = $user->id;
+            $comment->content = $content;
+            $comment->save();
+
+            return response()
+              ->json(['success' => 'Comment Added Successfully'],200);
+          } 
+          else
+          {
+            // user is not friend of author
+            // user cannot comment on post
+            return response()
+              ->json(['error' => 'Cannot comment on this post since you are not friends'],400);
+          }
+        }
+      } else
+      {
         return response()
-                ->json(['success' => 'Comment Added Successfully'],200);
-    
+          ->json(['error' => 'Post does not exist'],400);
+      }
+
     }
 
-    public function getComments(Request $request)
+    public function getComments(Request $request, $post_id)
     {
-        $user = Auth::user();
-        $post_id = $request->header('post_id');
-        $comments = Comment::where([['user_id','=',$user->id], ['post_id','=', $post_id]])->get();
+      $user = Auth::user();
 
+      $post = Post::where('id',$post_id)->first();
+      if($post)
+      {
+        if($post->user_id == $user->id)
+        {
+          // user is the author of post
+          // return him all the commentts for the requested post
+          $comments = Comment::where('post_id', $post_id)->get();
+
+          return response()
+            ->json(['comments' => $comments],200);
+        } else
+        {
+          // user is not the author of post
+          // check if user is friend of author
+          $friendCheck = $this->isFriends($user->id, $post->user_id);
+
+          if($friendCheck)
+          {
+            // user is friend of author
+            // return him all the commentts for the requested post
+            $comments = Comment::where('post_id', $post_id)->get();
+
+            return response()
+              ->json(['comments' => $comments],200);
+          } else
+          {
+            // user is not friend of author
+            // user cannot read comments
+            return response()
+              ->json(['error' => 'You are not authorised to read comments for this post'],400);
+          }
+
+        }
+      } else
+      {
         return response()
-                ->json(['comments' => $comments],200);
+          ->json(['error' => 'No comments found since the requested post does not exist'],400);
+      }
+
     }
 
     public function updateComment(Request $request, $id)
     {
-        $user = Auth::user();
-        $content = $request->input('content');
-        $comment = Comment::where('id', $id)->first();
-        if($comment){
-            $comment->content = $content;
-            $comment->save();
-            return response()
-                ->json(['success' => 'Comment Updated Successfully'],200);
+      $user = Auth::user();
+      $content = $request->input('content');
+      $comment = Comment::where('id', $id)->first();
+      if($comment)
+      {
+        // comment exists 
+        // check if user has permission to update it
+        if($comment->user_id == $user->id)
+        {
+          // user is the author of comment
+          // user has permission tot update it
+          $comment->content = $content;
+          $comment->save();
+          return response()
+            ->json(['success' => 'Comment updated successfully'],200);
+        } else {
+          // user is not the author of comment.
+          // user cannot delete it
+          return response()
+            ->json(['error' => 'You are not authorised to update this comment'],400);
         }
+      }
 
-        return response()
-            ->json(['error' => 'Comment not found'],400);
+      return response()
+          ->json(['error' => 'Comment not found'],400);
     
     }
 
     public function deleteComment(Request $request, $id)
     {
-        $user = Auth::user();
-        $comment = Comment::where('id', $id)->first();
-        if($comment){
-            $comment->delete();
-            return response()->json(['success' => 'Commend deleted successfully'],200);
+      $user = Auth::user();
+      $comment = Comment::where('id', $id)->first();
+      if($comment)
+      {
+        // comment exists 
+        // check if user has permission to delete it
+        if($comment->user_id == $user->id)
+        {
+          // user is the author of comment
+          // user has permission to delete comment
+          $comment->delete();
+          return response()
+            ->json(['success' => 'Comment deleted successfully'],200);
+        } else {
+          // user is not the author of comment. 
+          // user cannot delete it
+          return response()
+            ->json(['error' => 'You are not authorised to delete this comment'],400);
         }
+      }
 
-        return response()->json(['error' => 'Commend not found'],400);
+      return response()
+          ->json(['error' => 'Comment not found'],400);
+
     }
 
-    // public function getCommentById(Request $request, $id)
-    // {
-    //     $user = Auth::user();
-    //     $comment = Comment::where('id', $id)->first();
-    //     if($comment){
-    //         return response()->json(['comment' => $comment],200);
-    //     }
+    public function isFriends($user_id_1 , $user_id_2)
+    {
+      $friendRequest1 = FriendRequest::where([
+      ['from_user_id', '=', $user_id_1],
+      ['to_user_id', '=', $user_id_2],
+      ['status','=','accepted']
+      ])->first();
 
-    //     return response()->json(['error' => 'Commend not found'],400);
-    // }
+      if($friendRequest1){
+          return true;
+      }
+
+      $friendRequest2 = FriendRequest::where([
+      ['from_user_id', '=', $user_id_2],
+      ['to_user_id', '=', $user_id_1],
+      ['status','=','accepted']
+      ])->first();
+
+      if($friendRequest2){
+          return true;
+      }
+
+      return false;
+    }
 
 }
