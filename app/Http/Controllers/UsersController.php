@@ -232,7 +232,11 @@ class UsersController extends Controller
                 $senderId = $this->getSenderId($user->id,$currentUser->id);
             }
 
-            return response()->json(['user' => ['id' => $user->id, 'name' => $user->name, 'isFriends' => $isFriends , 'status' => $status, 'from_user_id' => $senderId ], 'posts' => $allPosts , 'postIds' => $postIds ],200);
+            if($isFriends){
+               return response()->json(['user' => ['id' => $user->id, 'name' => $user->name, 'isFriends' => $isFriends , 'status' => $status, 'from_user_id' => $senderId ], 'posts' => $allPosts , 'postIds' => $postIds ],200);
+            }else{
+               return response()->json(['user' => ['id' => $user->id, 'name' => $user->name, 'isFriends' => $isFriends , 'status' => $status, 'from_user_id' => $senderId ]],200);
+            }
         }
 
         return response()->json(['error' => 'User Not Found'],400);
@@ -311,27 +315,6 @@ class UsersController extends Controller
                   ->json(['users' => $allUsers],200);
 
     }
-
-    public function getCurrentUserData(Request $request)
-    {
-        $user = Auth::user();
-        $currentUser = User::where('id',$user->id)->first();
-        if($currentUser){
-            return response()->json(['user' => ['id' => $currentUser->id, 'name' => $currentUser->name]],200);
-        }
-        return response()->json(['error' => 'User Not Found'],400);
-    }
-    
-    public function getOtherUserData(Request $request, $id)
-    {
-        $user = Auth::user();
-        $otherUser = User::where('id',$id)->first();
-        if($otherUser){
-            return response()->json(['user' => ['id' => $otherUser->id, 'name' => $otherUser->name]],200);
-        }
-        return response()->json(['error' => 'User Not Found'],400);
-    }
-
 
     public function formattedDate($dateString){
         $carbon = new Carbon($dateString);

@@ -172,54 +172,26 @@ class CommentsController extends Controller
           return response()
             ->json(['success' => 'Comment deleted successfully'],200);
         } else {
-          // user is not the author of comment. 
-          // user cannot delete it
-          return response()
-            ->json(['error' => 'You are not authorised to delete this comment'],400);
+          // user is not the author of comment. but the comment may be on post published by him
+          // so check if post id of comment is owned by user
+          $post = Post::where('id',$comment->post_id)->first();
+          if($post && $post->user_id == $user->id){
+            // it is users post. let him delete comments
+            $comment->delete();
+            return response()
+              ->json(['success' => 'Comment deleted successfully'],200);
+          }else{
+            // not allowed to delete
+            return response()
+              ->json(['error' => 'You are not authorised to delete this comment'],400);
+          }
+
         }
       }
 
       return response()
           ->json(['error' => 'Comment not found'],400);
 
-    }
-
-    public function getAllComments(Request $request)
-    {
-        $user = Auth::user();
-        $postIdsArray = $request->input('postIdsArray');
-        $commentsForPost = [];
-        $currentUser = User::where('id','1')->first();
-        $comments = Comment::whereIn('post_id',$postIdsArray)->orderBy('created_at', 'ASC')->get();
-        // print_r($comments);
-        if($comments) {
-            foreach ($comments as $comment) {
-                $allUser[] = $comment->user_id;
-            }
-
-            $allUser = array_unique($allUser);
-            $userNames = User::select(['id','name'])->whereIn('id', $allUser)->get();
-            $temp = [];
-            foreach ($userNames as $row) {
-                $temp[$row['id']] = $row['name'];
-            }
-            // a map for id => username
-            $userNames = $temp;
-
-            foreach ($comments as $comment) {
-              $commentsForPost[] = [
-                'id' => $comment->id,
-                'user_id' => $comment->user_id,
-                'name' => $userNames[$comment->user_id],
-                'updated_at'=> $this->formattedDate($comment->updated_at),
-                'content' => $comment->content,
-                'isEditable' => $comment->user_id == $currentUser->id ? true:false
-              ];
-            }
-            return response()->json(['comments' => $commentsForPost],200);
-        }
-
-       return response()->json(['error' => 'Some Error'],400);
     }
 
     public function isFriends($user_id_1 , $user_id_2)
