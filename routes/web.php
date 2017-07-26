@@ -51,4 +51,7 @@ $app->group(['middleware' => ['cors','auth']], function () use ($app) {
 	$app->post('/comment/update/{id}', 'CommentsController@updateComment');
 	$app->post('/comment/delete/{id}', 'CommentsController@deleteComment');
 
+	// for testing
+	$app->get('/{user_id}/getPosts', 'PostsController@getPostsByUserId');
+
 });

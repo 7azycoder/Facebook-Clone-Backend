@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Post;
 use App\Comment;
 use App\FriendRequest;
+use Carbon\Carbon;
 
 class CommentsController extends Controller
 {
@@ -171,10 +172,20 @@ class CommentsController extends Controller
           return response()
             ->json(['success' => 'Comment deleted successfully'],200);
         } else {
-          // user is not the author of comment. 
-          // user cannot delete it
-          return response()
-            ->json(['error' => 'You are not authorised to delete this comment'],400);
+          // user is not the author of comment. but the comment may be on post published by him
+          // so check if post id of comment is owned by user
+          $post = Post::where('id',$comment->post_id)->first();
+          if($post && $post->user_id == $user->id){
+            // it is users post. let him delete comments
+            $comment->delete();
+            return response()
+              ->json(['success' => 'Comment deleted successfully'],200);
+          }else{
+            // not allowed to delete
+            return response()
+              ->json(['error' => 'You are not authorised to delete this comment'],400);
+          }
+
         }
       }
 
@@ -206,6 +217,13 @@ class CommentsController extends Controller
       }
 
       return false;
+    }
+
+    public function formattedDate($dateString){
+        $carbon = new Carbon($dateString);
+        // $time = microtime(true)
+        $localUpdatedDate = $carbon;//->timezone('Asia/Kolkata');
+        return $localUpdatedDate->diffForHumans();
     }
 
 }
