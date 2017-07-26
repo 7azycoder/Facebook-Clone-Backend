@@ -84,8 +84,9 @@ class UsersController extends Controller
               ->json(['success' => 'User Logged Out Successfully'],200);
     }
 
-    public function getCurrentUser(Request $request)
-    {
+
+    public function getCurrentUser(Request $request){
+
         $user = Auth::user();
         $postIds = [];
         $allUser = [];
@@ -141,7 +142,7 @@ class UsersController extends Controller
 
 
 
-                    $allPosts[] = [
+                    $allPosts[$post->id] = [
                         'id'  => $post->id,
                         'updated_at' => $this->formattedDate($post->updated_at) ,
                         'content' => $post->content,
@@ -150,10 +151,11 @@ class UsersController extends Controller
                 }
             }
 
-            return response()->json(['user' => ['id' => $currentUser->id, 'name' => $currentUser->name, 'posts' => $allPosts]],200);
+            return response()->json(['user' => ['id' => $currentUser->id, 'name' => $currentUser->name], 'posts' => $allPosts , 'postIds' => $postIds ],200);
         }
         return response()->json(['error' => 'User Not Found'],400);
     }
+
 
     public function getOtherUserById(Request $request, $user_id)
     {
@@ -212,7 +214,7 @@ class UsersController extends Controller
                         }
                     }
 
-                    $allPosts[] = [
+                    $allPosts[$post->id] = [
                         'id'  => $post->id,
                         'updated_at' => $this->formattedDate($post->updated_at),
                         'content' => $post->content,
@@ -222,16 +224,42 @@ class UsersController extends Controller
             }
 
             $isFriends = false;
+            $senderId = -1;
             $status = $this->friendShipStatus($user->id, $currentUser->id);
             if($status === "accepted"){
                 $isFriends = true;
+            } elseif($status ==='pending'){
+                $senderId = $this->getSenderId($user->id,$currentUser->id);
             }
 
-            return response()->json(['user' => ['id' => $user->id, 'name' => $user->name, 'posts' => $allPosts ,'isFriends' => $isFriends , 'status' => $status]],200);
+            return response()->json(['user' => ['id' => $user->id, 'name' => $user->name, 'isFriends' => $isFriends , 'status' => $status, 'from_user_id' => $senderId ], 'posts' => $allPosts , 'postIds' => $postIds ],200);
         }
 
         return response()->json(['error' => 'User Not Found'],400);
 
+    }
+
+    public function getSenderId($user_id_1, $user_id_2)
+    {
+      $friendRequest1 = FriendRequest::where([
+      ['from_user_id', '=', $user_id_1],
+      ['to_user_id', '=', $user_id_2],
+      ['status','=','pending']
+      ])->first();
+
+      if($friendRequest1){
+          return $friendRequest1->from_user_id;
+      }
+
+      $friendRequest2 = FriendRequest::where([
+      ['from_user_id', '=', $user_id_2],
+      ['to_user_id', '=', $user_id_1],
+      ['status','=','pending']
+      ])->first();
+
+      if($friendRequest2){
+          return $friendRequest2->from_user_id;
+      }
     }
 
     public function friendShipStatus($user_id_1 , $user_id_2)
@@ -256,7 +284,6 @@ class UsersController extends Controller
 
         return "NoRequestSent";
     }
-
 
 
     public function deleteCurrentUser(Request $request)
@@ -284,6 +311,27 @@ class UsersController extends Controller
                   ->json(['users' => $allUsers],200);
 
     }
+
+    public function getCurrentUserData(Request $request)
+    {
+        $user = Auth::user();
+        $currentUser = User::where('id',$user->id)->first();
+        if($currentUser){
+            return response()->json(['user' => ['id' => $currentUser->id, 'name' => $currentUser->name]],200);
+        }
+        return response()->json(['error' => 'User Not Found'],400);
+    }
+    
+    public function getOtherUserData(Request $request, $id)
+    {
+        $user = Auth::user();
+        $otherUser = User::where('id',$id)->first();
+        if($otherUser){
+            return response()->json(['user' => ['id' => $otherUser->id, 'name' => $otherUser->name]],200);
+        }
+        return response()->json(['error' => 'User Not Found'],400);
+    }
+
 
     public function formattedDate($dateString){
         $carbon = new Carbon($dateString);

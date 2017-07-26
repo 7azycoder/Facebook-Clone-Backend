@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Post;
 use App\Comment;
 use App\FriendRequest;
+use Carbon\Carbon;
 
 class CommentsController extends Controller
 {
@@ -183,6 +184,44 @@ class CommentsController extends Controller
 
     }
 
+    public function getAllComments(Request $request)
+    {
+        $user = Auth::user();
+        $postIdsArray = $request->input('postIdsArray');
+        $commentsForPost = [];
+        $currentUser = User::where('id','1')->first();
+        $comments = Comment::whereIn('post_id',$postIdsArray)->orderBy('created_at', 'ASC')->get();
+        // print_r($comments);
+        if($comments) {
+            foreach ($comments as $comment) {
+                $allUser[] = $comment->user_id;
+            }
+
+            $allUser = array_unique($allUser);
+            $userNames = User::select(['id','name'])->whereIn('id', $allUser)->get();
+            $temp = [];
+            foreach ($userNames as $row) {
+                $temp[$row['id']] = $row['name'];
+            }
+            // a map for id => username
+            $userNames = $temp;
+
+            foreach ($comments as $comment) {
+              $commentsForPost[] = [
+                'id' => $comment->id,
+                'user_id' => $comment->user_id,
+                'name' => $userNames[$comment->user_id],
+                'updated_at'=> $this->formattedDate($comment->updated_at),
+                'content' => $comment->content,
+                'isEditable' => $comment->user_id == $currentUser->id ? true:false
+              ];
+            }
+            return response()->json(['comments' => $commentsForPost],200);
+        }
+
+       return response()->json(['error' => 'Some Error'],400);
+    }
+
     public function isFriends($user_id_1 , $user_id_2)
     {
       $friendRequest1 = FriendRequest::where([
@@ -206,6 +245,13 @@ class CommentsController extends Controller
       }
 
       return false;
+    }
+
+    public function formattedDate($dateString){
+        $carbon = new Carbon($dateString);
+        // $time = microtime(true)
+        $localUpdatedDate = $carbon;//->timezone('Asia/Kolkata');
+        return $localUpdatedDate->diffForHumans();
     }
 
 }
